@@ -13,6 +13,7 @@ class GildedRose
     const DAYS_LEFT_WITH_TRIPLE_THE_QUALITY = 6;
     const ITEM_QUALITY_STEP = 1;
     const MIN_SELLING_DAYS = 0;
+    const ITEM_SELL_IN_STEP = 1;
     /**
      * @var Item[]
      */
