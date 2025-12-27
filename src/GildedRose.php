@@ -2,8 +2,7 @@
 
 namespace GildedRose;
 
-class GildedRose
-{
+class GildedRose {
     const AGED_BRIE_NAME = 'Aged Brie';
     const SULFURAS_HAND_OF_RAGNAROS_NAME = 'Sulfuras, Hand of Ragnaros';
     const BACKSTAGE_PASSES_TO_A_TAFKAL_80_ETC_CONCERT_STR = 'Backstage passes to a TAFKAL80ETC concert';
@@ -22,60 +21,162 @@ class GildedRose
     /**
      * @param Item[] $items
      */
-    public function __construct(array $items)
-    {
+    public function __construct(array $items) {
         $this->items = $items;
     }
 
-    public function updateQuality(): void
-    {
+    public function updateQuality(): void {
         foreach ($this->items as $item) {
-            if ($item->name != self::AGED_BRIE_NAME && $item->name != self::BACKSTAGE_PASSES_TO_A_TAFKAL_80_ETC_CONCERT_STR) {
-                if ($item->quality > self::MIN_ITEM_QUALITY) {
-                    if ($item->name != self::SULFURAS_HAND_OF_RAGNAROS_NAME) {
-                        $item->quality = $item->quality - self::ITEM_QUALITY_STEP;
+            if ($this->isSulfuras($item)) {
+                if ($this->isQualityAboveMinimum($item)) {
+                    if ($this->isNotSulfuras($item)) {
+                        $item->quality = $this->decreaseQuality($item);
                     }
                 }
             } else {
-                if ($item->quality < self::MAX_ITEMS_QUALITY) {
-                    $item->quality = $item->quality + self::ITEM_QUALITY_STEP;
-                    if ($item->name == self::BACKSTAGE_PASSES_TO_A_TAFKAL_80_ETC_CONCERT_STR) {
-                        if ($item->sellIn < self::DAYS_LEFT_WITH_DOUBLE_THE_QUALITY) {
-                            if ($item->quality < self::MAX_ITEMS_QUALITY) {
-                                $item->quality = $item->quality + self::ITEM_QUALITY_STEP;
+                if ($this->isQualityBelowMax($item)) {
+                    $item->quality = $this->increaseQuality($item);
+                    if ($this->isBackstagePass($item)) {
+                        if ($this->isFirstSellInThresholdMet($item)) {
+                            if ($this->isQualityBelowMax($item)) {
+                                $item->quality = $this->increaseQuality($item);
                             }
                         }
-                        if ($item->sellIn < self::DAYS_LEFT_WITH_TRIPLE_THE_QUALITY) {
-                            if ($item->quality < self::MAX_ITEMS_QUALITY) {
-                                $item->quality = $item->quality + self::ITEM_QUALITY_STEP;
+                        if ($this->isSecondSellInTresholdMet($item)) {
+                            if ($this->isQualityBelowMax($item)) {
+                                $item->quality = $this->increaseQuality($item);
                             }
                         }
                     }
                 }
             }
 
-            if ($item->name != self::SULFURAS_HAND_OF_RAGNAROS_NAME) {
-                $item->sellIn = $item->sellIn - self::ITEM_QUALITY_STEP;
+            if ($this->isNotSulfuras($item)) {
+                $item->sellIn = $this->decreaseSellIn($item);
             }
 
-            if ($item->sellIn < self::MIN_SELLING_DAYS) {
-                if ($item->name != self::AGED_BRIE_NAME) {
-                    if ($item->name != self::BACKSTAGE_PASSES_TO_A_TAFKAL_80_ETC_CONCERT_STR) {
-                        if ($item->quality > self::MIN_ITEM_QUALITY) {
-                            if ($item->name != self::SULFURAS_HAND_OF_RAGNAROS_NAME) {
-                                $item->quality = $item->quality - self::ITEM_QUALITY_STEP;
+            if ($this->isItemExpired($item)) {
+                if ($this->isNotAgedBrie($item)) {
+                    if ($this->isNotBackstagePass($item)) {
+                        if ($this->isQualityAboveMinimum($item)) {
+                            if ($this->isNotSulfuras($item)) {
+                                $item->quality = $this->decreaseQuality($item);
                             }
                         }
                     } else {
                         $item->quality = self::MIN_ITEM_QUALITY;
                     }
                 } else {
-                    if ($item->quality < self::MAX_ITEMS_QUALITY) {
-                        $item->quality = $item->quality + self::ITEM_QUALITY_STEP;
+                    if ($this->isQualityBelowMax($item)) {
+                        $item->quality = $this->increaseQuality($item);
                     }
                 }
             }
         }
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isSulfuras(Item $item): bool {
+        return $this->isNotAgedBrie($item) && $this->isNotBackstagePass($item);
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isQualityAboveMinimum(Item $item): bool {
+        return $item->quality > self::MIN_ITEM_QUALITY;
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isNotSulfuras(Item $item): bool {
+        return $item->name != self::SULFURAS_HAND_OF_RAGNAROS_NAME;
+    }
+
+    /**
+     * @param Item $item
+     * @return int
+     */
+    public function decreaseQuality(Item $item): int {
+        return $item->quality - self::ITEM_QUALITY_STEP;
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isQualityBelowMax(Item $item): bool {
+        return $item->quality < self::MAX_ITEMS_QUALITY;
+    }
+
+    /**
+     * @param Item $item
+     * @return int
+     */
+    public function increaseQuality(Item $item): int {
+        return $item->quality + self::ITEM_QUALITY_STEP;
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isBackstagePass(Item $item): bool {
+        return $item->name == self::BACKSTAGE_PASSES_TO_A_TAFKAL_80_ETC_CONCERT_STR;
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isFirstSellInThresholdMet(Item $item): bool {
+        return $item->sellIn < self::DAYS_LEFT_WITH_DOUBLE_THE_QUALITY;
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isSecondSellInTresholdMet(Item $item): bool {
+        return $item->sellIn < self::DAYS_LEFT_WITH_TRIPLE_THE_QUALITY;
+    }
+
+    /**
+     * @param Item $item
+     * @return int
+     */
+    public function decreaseSellIn(Item $item): int {
+        return $item->sellIn - self::ITEM_SELL_IN_STEP;
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isItemExpired(Item $item): bool {
+        return $item->sellIn < self::MIN_SELLING_DAYS;
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isNotAgedBrie(Item $item): bool {
+        return $item->name != self::AGED_BRIE_NAME;
+    }
+
+    /**
+     * @param Item $item
+     * @return bool
+     */
+    public function isNotBackstagePass(Item $item): bool {
+        return $item->name != self::BACKSTAGE_PASSES_TO_A_TAFKAL_80_ETC_CONCERT_STR;
     }
 }
 
